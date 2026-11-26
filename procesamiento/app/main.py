@@ -2,7 +2,7 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
 from fastapi import FastAPI
-from app.config import OUTPUT,SAMPLES_DB
+from app.config import OUTPUT,SAMPLES_DB,WEB_DIR
 from app.controllers import analysis,health,history,results,samples,ufc
 from app.services.engines import EngineService,default_hybrid_factory
 from app.services.results import ResultStore
@@ -14,7 +14,7 @@ TAGS=[{'name':'Estado'},{'name':'Analisis'},{'name':'Resultados'},
       {'name':'Calculo de UFC','description':'UFC/mL o UFC/g a partir de diluciones y conteos, sin guardar.'},
       {'name':'Muestras (en desarrollo)','description':'Muestras con varias diluciones. Aun no validado ni usado por la PWA.'}]
 
-def create_app(output=OUTPUT,samples_db=SAMPLES_DB,hybrid_factory=default_hybrid_factory,use_hybrid=None,web_dir=None,access_key=None):
+def create_app(output=OUTPUT,samples_db=SAMPLES_DB,hybrid_factory=default_hybrid_factory,use_hybrid=None,web_dir=WEB_DIR,access_key=None):
     """web_dir sirve la PWA compilada en el mismo puerto; access_key exige una clave en cada ruta de la API."""
     engines=EngineService(hybrid_factory,True if use_hybrid is None else use_hybrid)
 

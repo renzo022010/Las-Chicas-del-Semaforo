@@ -52,21 +52,21 @@ class HistoryApiTests(unittest.TestCase):
         fake_analysis(self.api,A,40)
         with self.client() as c:
             centers=[{'x':10+i,'y':10} for i in range(120)]
-            self.assertEqual(c.post(f'/results/{A}/review',json={'centers':centers}).status_code,200)
-            first=c.post(f'/results/{A}/ufc',json={'exponent':3,'volume_ml':1,'unit':'g'}).json()
+            self.assertEqual(c.post(f'/results/{A}/review',json={'sample':{'code':'M-TEST','sample_type':'Agua','responsible':'Ana'},'centers':centers}).status_code,200)
+            first=c.post(f'/results/{A}/ufc',json={'sample':{'code':'M-TEST','sample_type':'Agua','responsible':'Ana'},'exponent':3,'volume_ml':1,'unit':'g'}).json()
             self.assertEqual((first['count'],first['count_source'],first['reviewed_count']),(120,'revisado',120))
             self.assertAlmostEqual(first['result']['value'],120000);self.assertEqual(first['result']['unit'],'UFC/g')
             self.assertTrue(any('una sola placa' in w for w in first['result']['warnings']))
-            c.post(f'/results/{A}/ufc',json={'exponent':2,'volume_ml':1,'unit':'g'})
+            c.post(f'/results/{A}/ufc',json={'sample':{'code':'M-TEST','sample_type':'Agua','responsible':'Ana'},'exponent':2,'volume_ml':1,'unit':'g'})
             self.assertEqual(c.get(f'/results/{A}/ufc.json').json()['exponent'],2)
         self.assertEqual(len((self.api/'historial.jsonl').read_text(encoding='utf-8').splitlines()),2)
 
     def test_out_of_range_and_zero_counts_warn(self):
         fake_analysis(self.api,A,12);fake_analysis(self.api,B,0)
         with self.client() as c:
-            low=c.post(f'/results/{A}/ufc',json={'exponent':1,'volume_ml':.1}).json()['result']
+            low=c.post(f'/results/{A}/ufc',json={'sample':{'code':'M-TEST','sample_type':'Agua','responsible':'Ana'},'exponent':1,'volume_ml':.1}).json()['result']
             self.assertFalse(low['in_range']);self.assertTrue(any('estimacion' in w for w in low['warnings']))
-            zero=c.post(f'/results/{B}/ufc',json={'exponent':1,'volume_ml':.1}).json()['result']
+            zero=c.post(f'/results/{B}/ufc',json={'sample':{'code':'M-TEST','sample_type':'Agua','responsible':'Ana'},'exponent':1,'volume_ml':.1}).json()['result']
             self.assertEqual(zero['value'],0);self.assertAlmostEqual(zero['detection_limit'],100)
 
     def test_history_newest_first_with_and_without_ufc(self):
@@ -74,7 +74,7 @@ class HistoryApiTests(unittest.TestCase):
         (self.api/'nota.txt').write_text('no es un analisis',encoding='utf-8')
         (self.api/('d'*32)).mkdir()  # carpeta sin resultado: se ignora
         with self.client() as c:
-            c.post(f'/results/{B}/ufc',json={'exponent':1,'volume_ml':.1,'sample':{'code':'M-002'}})
+            c.post(f'/results/{B}/ufc',json={'sample':{'code':'M-TEST','sample_type':'Agua','responsible':'Ana'},'exponent':1,'volume_ml':.1,'sample':{'code':'M-002','sample_type':'Agua'}})
             items=c.get('/history').json()
             self.assertEqual([i['analysis_id'] for i in items],[C,B,A])
             self.assertIsNone(items[0]['ufc'])
@@ -94,7 +94,7 @@ class HistoryApiTests(unittest.TestCase):
             items=c.get('/history').json()
             self.assertEqual([i['analysis_id'] for i in items],[B,A])
             self.assertEqual(items[1]['analyzed_at'],'2026-01-05T09:00:00')
-            self.assertEqual(c.post(f'/results/{A}/ufc',json={'exponent':1,'volume_ml':.1}).json()['analyzed_at'],'2026-01-05T09:00:00')
+            self.assertEqual(c.post(f'/results/{A}/ufc',json={'sample':{'code':'M-TEST','sample_type':'Agua','responsible':'Ana'},'exponent':1,'volume_ml':.1}).json()['analyzed_at'],'2026-01-05T09:00:00')
 
     def test_thumbnail_is_small_and_cached(self):
         fake_analysis(self.api,A,5)
@@ -109,10 +109,40 @@ class HistoryApiTests(unittest.TestCase):
             self.assertEqual(c.get('/api/history').status_code,401)
             self.assertEqual(c.get('/api/history/csv?clave=k').status_code,200)
             h={'X-Clave':'k'}
-            self.assertEqual(c.post(f'/results/{B}/ufc',json={'exponent':1,'volume_ml':.1},headers=h).status_code,404)
-            self.assertEqual(c.post('/results/xyz/ufc',json={'exponent':1,'volume_ml':.1},headers=h).status_code,404)
-            self.assertEqual(c.post(f'/results/{A}/ufc',json={'exponent':1,'volume_ml':0},headers=h).status_code,422)
-            self.assertEqual(c.post(f'/results/{A}/ufc',json={'exponent':1,'volume_ml':.1,'count_min':300,'count_max':30},headers=h).status_code,422)
+            self.assertEqual(c.post(f'/results/{B}/ufc',json={'sample':{'code':'M-TEST','sample_type':'Agua','responsible':'Ana'},'exponent':1,'volume_ml':.1},headers=h).status_code,404)
+            self.assertEqual(c.post('/results/xyz/ufc',json={'sample':{'code':'M-TEST','sample_type':'Agua','responsible':'Ana'},'exponent':1,'volume_ml':.1},headers=h).status_code,404)
+            self.assertEqual(c.post(f'/results/{A}/ufc',json={'sample':{'code':'M-TEST','sample_type':'Agua','responsible':'Ana'},'exponent':1,'volume_ml':0},headers=h).status_code,422)
+            self.assertEqual(c.post(f'/results/{A}/ufc',json={'sample':{'code':'M-TEST','sample_type':'Agua','responsible':'Ana'},'exponent':1,'volume_ml':.1,'count_min':300,'count_max':30},headers=h).status_code,422)
             self.assertEqual(c.get(f'/results/{A}/historial.jsonl',headers=h).status_code,404)
+
+
+    def test_required_sample_and_review_csv_without_ufc(self):
+        fake_analysis(self.api,A,12)
+        with self.client() as c:
+            for sample in (None, {}, {'code':'  ','sample_type':'Agua'}, {'code':'X','sample_type':' '}):
+                for endpoint,body in [('review',{'centers':[]}),('ufc',{'exponent':1,'volume_ml':1})]:
+                    if sample is not None:body['sample']=sample
+                    self.assertEqual(c.post(f'/results/{A}/{endpoint}',json=body).status_code,422)
+            sample={'code':' M-01 ','sample_type':'Agua de riego','responsible':'Valeria','notes':'Primera, prueba'}
+            r=c.post(f'/results/{A}/review',json={'centers':[{'x':10,'y':10}],'sample':sample})
+            self.assertEqual(r.status_code,200,r.text)
+            row=list(csv.DictReader(io.StringIO(c.get('/history/csv').content.decode('utf-8-sig'))))[0]
+            self.assertEqual((row['codigo_muestra'],row['tipo_muestra'],row['responsable'],row['observaciones']),('M-01','Agua de riego','Valeria','Primera, prueba'))
+            self.assertNotIn('placa_duplicada',row);self.assertNotIn('advertencias',row)
+            self.assertEqual(row['ufc'],'')
+            c.post(f'/results/{A}/ufc',json={'exponent':1,'volume_ml':1,'sample':sample})
+            sample['code']='M-02';sample['notes']='Nueva observación'
+            c.post(f'/results/{A}/review',json={'centers':[],'sample':sample})
+            row=list(csv.DictReader(io.StringIO(c.get('/history/csv').content.decode('utf-8-sig'))))[0]
+            self.assertEqual((row['codigo_muestra'],row['observaciones']),('M-02','Nueva observación'))
+
+    def test_same_interface_localhost_and_network(self):
+        for host in ('localhost','192.168.1.10'):
+            with TestClient(create_app(output=self.api,samples_db=self.root/'m.db',use_hybrid=False),base_url=f'http://{host}') as c:
+                page=c.get('/')
+                self.assertEqual(page.status_code,200)
+                self.assertIn('ÑawIA',page.text)
+                self.assertEqual(page.headers['cache-control'],'no-cache')
+                self.assertEqual(c.get('/api/history').status_code,200)
 
 if __name__=='__main__':unittest.main(verbosity=2)

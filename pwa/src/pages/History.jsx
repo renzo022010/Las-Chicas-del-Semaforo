@@ -8,6 +8,7 @@ import { dilutionLabel, ufcText } from '../ufc.js'
 // Una fila del historial: foto, fecha, muestra, conteo usado y UFC (si ya se calculo).
 export function HistoryRow({ item }) {
   const { analysis_id: id, ufc } = item
+  const sample = item.sample || ufc?.sample
   const count = ufc ? `${ufc.count}${ufc.duplicate_count != null ? ` y ${ufc.duplicate_count}` : ''}` : item.reviewed_count ?? item.automatic_count
   const reviewed = ufc ? ufc.count_source === 'revisado' : item.reviewed_count != null
   return (
@@ -16,7 +17,7 @@ export function HistoryRow({ item }) {
       <span className="history-main">
         <strong>{ufc ? <>{ufcText(ufc)} <span className="unit">{ufc.unit}</span></> : 'Sin cálculo de UFC'}</strong>
         <span className="muted small">{count} colonias{reviewed ? ' (revisado)' : ''}{ufc ? ` · dilución ${dilutionLabel(ufc.exponent)} · ${ufc.volume_ml} mL` : ''}</span>
-        <span className="muted small">{fmtDateTime(item.analyzed_at)}{ufc?.sample?.code ? ` · ${ufc.sample.code}` : ''}{ufc?.sample?.sample_type ? ` · ${ufc.sample.sample_type}` : ''}</span>
+        <span className="muted small">{fmtDateTime(item.analyzed_at)}{sample?.code ? ` · ${sample.code}` : ''}{sample?.sample_type ? ` · ${sample.sample_type}` : ''}</span>
       </span>
       <Icon name="chevron" />
     </Link>

@@ -25,13 +25,13 @@ export default function App() {
           </nav>}
         </div></header>
         <main>
-          <Routes>
+          {!name ? <Home /> : <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/analizar" element={<Analyze />} />
             <Route path="/resultado/:id" element={<Result />} />
             <Route path="/historial" element={<History />} />
             <Route path="*" element={<Home />} />
-          </Routes>
+          </Routes>}
         </main>
         <footer>ÑawIA · Conteo de colonias con inteligencia artificial · UNALM</footer>
       </HealthContext.Provider>

@@ -4,10 +4,16 @@ import { api } from '../api.js'
 import { Icon } from '../icons.jsx'
 import PlateReview, { pointsFromResult, pointsFromReview, reviewStats } from '../components/PlateReview.jsx'
 import UfcCalculator from '../components/UfcCalculator.jsx'
+import { useProfile } from '../profile.js'
+import SampleFields, { blankSample, validSample } from '../components/SampleFields.jsx'
 import { updateRecent } from '../recent.js'
 
 export default function Result() {
   const { id } = useParams()
+  const { name } = useProfile()
+  const [sample, setSample] = useState(blankSample)
+  const changeSample = value => { setSample(value); setEdited(true) }
+  const sampleBody = () => ({ ...sample, code: sample.code.trim(), sample_type: sample.sample_type.trim(), responsible: name })
   const [result, setResult] = useState(null)
   const [points, setPoints] = useState([])
   const [saved, setSaved] = useState(null) // revision guardada en la API
@@ -19,10 +25,11 @@ export default function Result() {
   useEffect(() => {
     let alive = true
     setResult(null); setError(''); setEdited(false)
-    Promise.all([api.result(id), api.savedReview(id), api.savedUfc(id)])
-      .then(([r, review, savedUfc]) => {
+    Promise.all([api.result(id), api.savedReview(id), api.savedUfc(id), api.savedSample(id)])
+      .then(([r, review, savedUfc, storedSample]) => {
         if (!alive) return
         setResult(r); setSaved(review); setUfc(savedUfc)
+        setSample({ ...blankSample, ...(storedSample || review?.sample || savedUfc?.sample) })
         setPoints(review ? pointsFromReview(review, r) : pointsFromResult(r))
       })
       .catch((e) => alive && setError(e.message))
@@ -30,8 +37,9 @@ export default function Result() {
   }, [id])
 
   async function persistReview() {
-    const record = await api.review(id, points.map(({ x, y }) => ({ x, y })), 'Revisado en la PWA')
-    setSaved(record); setEdited(false)
+    if (!validSample(sample) || !name) throw new Error('Completa el código y el tipo de muestra e ingresa tu nombre.')
+    const record = await api.review(id, points.map(({ x, y }) => ({ x, y })), sampleBody(), 'Revisado en la PWA')
+    setSaved(record); setSample(record.sample); setEdited(false)
     updateRecent(id, { reviewed: record.reviewed_count })
     return record
   }
@@ -43,15 +51,20 @@ export default function Result() {
 
   // El servidor calcula con el conteo guardado: si hay cambios sin guardar, primero se guarda la revision.
   async function saveUfc(body) {
-    if (edited) await persistReview()
-    const record = await api.saveUfc(id, body)
-    setUfc(record)
-    return record
+    setBusy(true)
+    try {
+      if (!validSample(sample) || !name) throw new Error('Completa el código y el tipo de muestra.')
+      if (edited || !saved) await persistReview()
+      const record = await api.saveUfc(id, { ...body, sample: sampleBody() })
+      setUfc(record)
+      return record
+    } finally { setBusy(false) }
   }
 
   if (error && !result) return <div className="stack"><p className="alert">{error}</p><Link className="btn btn-ghost" to="/analizar">Analizar otra foto</Link></div>
   if (!result) return <p className="muted">Cargando resultado…</p>
 
+  const reviewCurrent = saved && !edited && validSample(sample) && saved.sample?.responsible === name
   const stats = reviewStats(points, result.count)
   const countLabel = edited ? 'con cambios sin guardar' : saved ? 'revisado' : 'automático'
   return <section>
@@ -64,15 +77,16 @@ export default function Result() {
         <PlateReview imageUrl={api.fileUrl(id, 'foto_original.jpg')} size={result.image_size} points={points} onChange={(p) => { setPoints(p); setEdited(true) }} />
         <div className="stats"><span>Automático: <b>{result.count}</b></span><span>Añadidas: <b>{stats.added}</b></span><span>Quitadas: <b>{stats.removed}</b></span></div>
         <p className="small muted">Motor IA · {result.processing_seconds} s · {stats.edge} cerca del borde</p>
-        {saved && !edited && <p className="ok-note" role="status"><Icon name="check" size={18} />Revisión guardada: {saved.reviewed_count} colonias.</p>}
+        {reviewCurrent && <p className="ok-note" role="status"><Icon name="check" size={18} />Revisión guardada: {saved.reviewed_count} colonias.</p>}
         {edited && <p className="warn small">Hay cambios sin guardar.</p>}
         {(result.warnings || []).slice(0, 2).map((w) => <p key={w} className="warn small">{w}</p>)}
         {error && <p className="alert" role="alert">{error}</p>}
-        <div className="row"><button className="primary" onClick={saveReview} disabled={busy || (!edited && saved)}>{busy ? 'Guardando…' : saved && !edited ? 'Revisión guardada' : 'Guardar revisión'}</button>
+        <SampleFields sample={sample} onChange={changeSample} responsible={name} disabled={busy} />
+        <div className="row"><button className="primary" onClick={saveReview} disabled={busy || !validSample(sample) || reviewCurrent}>{busy ? 'Guardando…' : reviewCurrent ? 'Revisión guardada' : 'Guardar revisión'}</button>
           <a className="link small" href={api.fileUrl(id, 'foto_conteo.jpg')} target="_blank" rel="noreferrer">Ver imagen anotada por el motor</a>
         </div>
       </article>
-      <UfcCalculator key={id} count={stats.total} countLabel={countLabel} saved={ufc} onSave={saveUfc} />
+      <UfcCalculator key={id} count={stats.total} countLabel={countLabel} saved={ufc} onSave={saveUfc} sample={{ ...sample, responsible: name }} onSampleChange={changeSample} saving={busy} />
     </div>
   </section>
 }

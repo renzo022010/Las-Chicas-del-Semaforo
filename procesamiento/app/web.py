@@ -10,10 +10,13 @@ API_PREFIXES=('/health','/analyze','/results','/history','/samples','/ufc','/doc
 class SPAStaticFiles(StaticFiles):
     """Archivos de la PWA; una ruta desconocida (/resultado/abc) devuelve index.html para que la resuelva React."""
     async def get_response(self,path,scope):
-        try:return await super().get_response(path,scope)
+        try:response=await super().get_response(path,scope)
         except HTTPException as exc:
             if exc.status_code!=404:raise
-            return await super().get_response('index.html',scope)
+            response=await super().get_response('index.html',scope)
+        if path in ('','index.html','sw.js','registerSW.js') or response.headers.get('content-type','').startswith('text/html'):
+            response.headers['Cache-Control']='no-cache'
+        return response
 
 class ApiGateway:
     """La PWA llama a /api/...: se quita el prefijo para usar las mismas rutas que /docs y los tests.

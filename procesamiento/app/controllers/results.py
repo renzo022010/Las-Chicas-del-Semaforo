@@ -7,7 +7,7 @@ router=APIRouter(prefix='/results',tags=['Resultados'])
 
 @router.get('/{analysis_id}/{name}')
 def result_file(analysis_id:str,name:str,results:ResultStore=Depends(get_results)):
-    try:return FileResponse(results.path(analysis_id,name))
+    try:return FileResponse(results.path(analysis_id,name),headers={'Cache-Control':'no-store'} if name.endswith('.json') else None)
     except ResultNotFound:raise HTTPException(404,'No encontrado') from None
 
 @router.post('/{analysis_id}/review')

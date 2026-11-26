@@ -22,7 +22,7 @@ const key = readKey()
 async function req(path, opts = {}) {
   let res
   try {
-    res = await fetch(BASE + path, { ...opts, headers: { ...(opts.headers || {}), ...(key ? { 'X-Clave': key } : {}) } })
+    res = await fetch(BASE + path, { cache: 'no-store', ...opts, headers: { ...(opts.headers || {}), ...(key ? { 'X-Clave': key } : {}) } })
   } catch {
     throw new Error(OFFLINE)
   }
@@ -49,7 +49,8 @@ export const api = {
   },
   result: (id) => req(`/results/${id}/foto_resultado.json`),
   savedReview: (id) => req(`/results/${id}/revision.json`).catch(() => null),
-  review: (id, centers, note = '') => postJson(`/results/${id}/review`, { centers, note }),
+  review: (id, centers, sample, note = '') => postJson(`/results/${id}/review`, { centers, sample, note }),
+  savedSample: (id) => req(`/results/${id}/muestra.json`).catch(() => null),
   // Calculo sin guardar (vista previa) y calculo guardado junto a la foto y en el historial.
   ufcPreview: (body) => postJson('/ufc', body),
   saveUfc: (id, body) => postJson(`/results/${id}/ufc`, body),

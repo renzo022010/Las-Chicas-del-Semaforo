@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import SampleFields, { validSample } from './SampleFields.jsx'
 import { api } from '../api.js'
 import { Icon } from '../icons.jsx'
 import { fmtDateTime } from '../recent.js'
@@ -36,7 +37,7 @@ export function formError(form) {
 
 // Calculo de UFC de la placa analizada. `count` es el conteo que se ve en pantalla; al guardar, el servidor usa el
 // conteo guardado (revision o automatico), por eso la pagina guarda primero la revision si hay cambios.
-export default function UfcCalculator({ count, countLabel, saved, onSave }) {
+export default function UfcCalculator({ count, countLabel, saved, onSave, sample, onSampleChange, saving }) {
   const [form, setForm] = useState(() => formFromRecord(saved))
   const [preview, setPreview] = useState(null)
   const [busy, setBusy] = useState(false)
@@ -45,7 +46,7 @@ export default function UfcCalculator({ count, countLabel, saved, onSave }) {
   const invalid = formError(form)
 
   const set = (patch) => { setForm((f) => ({ ...f, ...patch })); setDirty(true) }
-  const setSample = (patch) => set({ sample: { ...form.sample, ...patch } })
+
 
   // Vista previa con la misma formula del servidor (POST /ufc), sin guardar nada.
   useEffect(() => {
@@ -64,12 +65,12 @@ export default function UfcCalculator({ count, countLabel, saved, onSave }) {
 
   async function save() {
     setBusy(true); setError('')
-    try { await onSave(bodyFromForm(form)); setDirty(false) } catch (e) { setError(e.message) } finally { setBusy(false) }
+    try { await onSave({ ...bodyFromForm(form), sample }); setDirty(false) } catch (e) { setError(e.message) } finally { setBusy(false) }
   }
 
   const row = preview?.rows?.[0]
   const stale = saved && !dirty && saved.count !== count
-  const upToDate = saved && !dirty && !stale
+  const upToDate = saved && !dirty && !stale && ['code', 'sample_type', 'notes', 'responsible'].every(k => (saved.sample?.[k] || '') === sample[k])
   return (
     <section className="panel ufc-card stack" aria-labelledby="ufc-title">
       <div className="ufc-head">
@@ -110,21 +111,13 @@ export default function UfcCalculator({ count, countLabel, saved, onSave }) {
       {form.unit === 'g' && <p className="muted small">Para UFC/g, la dilución debe incluir la del homogeneizado inicial (por ejemplo, 10 g en 90 mL = 10⁻¹).</p>}
 
       <details className="ufc-more">
-        <summary>Rango contable y datos de la muestra</summary>
+        <summary>Rango contable</summary>
         <div className="ufc-form">
           <label className="field"><span className="label">Rango contable: mínimo</span>
             <input className="input" type="text" inputMode="numeric" value={form.min} onChange={(e) => set({ min: e.target.value.replace(/[^\d]/g, '') })} /></label>
           <label className="field"><span className="label">Rango contable: máximo</span>
             <input className="input" type="text" inputMode="numeric" value={form.max} onChange={(e) => set({ max: e.target.value.replace(/[^\d]/g, '') })} /></label>
-          <label className="field"><span className="label">Código de muestra</span>
-            <input className="input" maxLength={40} placeholder="M-00123" value={form.sample.code} onChange={(e) => setSample({ code: e.target.value })} /></label>
-          <label className="field"><span className="label">Tipo de muestra</span>
-            <input className="input" maxLength={40} placeholder="Suelo, agua, alimento…" value={form.sample.sample_type} onChange={(e) => setSample({ sample_type: e.target.value })} /></label>
-          <label className="field"><span className="label">Responsable</span>
-            <input className="input" maxLength={80} value={form.sample.responsible} onChange={(e) => setSample({ responsible: e.target.value })} /></label>
         </div>
-        <label className="field"><span className="label">Observaciones</span>
-          <textarea className="input" rows={2} maxLength={2000} value={form.sample.notes} onChange={(e) => setSample({ notes: e.target.value })} /></label>
       </details>
 
       <div className="ufc-result" aria-live="polite">
@@ -150,7 +143,8 @@ export default function UfcCalculator({ count, countLabel, saved, onSave }) {
       {stale && <p className="warn small">El conteo cambió desde el último cálculo guardado ({saved.count} colonias). Vuelve a guardar.</p>}
       {error && <p className="alert" role="alert">{error}</p>}
 
-      <button type="button" className="btn btn-primary btn-wide" disabled={busy || !!invalid || upToDate} onClick={save}>
+      <SampleFields sample={sample} onChange={onSampleChange} responsible={sample.responsible} disabled={busy || saving} />
+      <button type="button" className="btn btn-primary btn-wide" disabled={busy || saving || !!invalid || !validSample(sample) || upToDate} onClick={save}>
         {busy ? 'Guardando…' : upToDate ? 'Cálculo guardado' : 'Guardar en el historial'}
       </button>
       <p className="muted small">Se guarda junto a la foto: conteo, dilución, volumen, resultado y datos de la muestra.</p>

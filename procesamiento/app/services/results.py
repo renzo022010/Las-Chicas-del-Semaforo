@@ -17,9 +17,9 @@ THUMB_SIDE=360
 HISTORY_LOG='historial.jsonl'
 CSV_COLUMNS=(('fecha_analisis','analyzed_at'),('id_analisis','analysis_id'),('codigo_muestra','code'),('tipo_muestra','sample_type'),
     ('responsable','responsible'),('colonias_automatico','automatic_count'),('colonias_revisado','reviewed_count'),
-    ('colonias_usadas','count'),('placa_duplicada','duplicate_count'),('dilucion','dilution'),('volumen_sembrado_ml','volume_ml'),
+    ('colonias_usadas','count'),('dilucion','dilution'),('volumen_sembrado_ml','volume_ml'),
     ('unidad','unit'),('ufc','value'),('ufc_reportado','reported'),('log10_ufc','log10'),('en_rango_contable','in_range'),
-    ('advertencias','warnings'),('observaciones','notes'),('ufc_guardado','saved_at'))
+    ('observaciones','notes'),('ufc_guardado','saved_at'))
 
 def _valid_id(analysis_id):
     return len(analysis_id)==32 and all(c in '0123456789abcdef' for c in analysis_id)
@@ -67,8 +67,13 @@ class ResultStore:
         if any(p.x>=w or p.y>=h for p in review.centers):raise ValueError('Centro fuera de imagen')
         record={'automatic_count':original['count'],'reviewed_count':len(review.centers),**review.model_dump(),
                 'review_type':'human_submitted_centers_not_model_prediction'}
-        (self.root/analysis_id/'revision.json').write_text(json.dumps(record,indent=2,ensure_ascii=False),encoding='utf-8')
+        with self._lock:
+            (self.root/analysis_id/'revision.json').write_text(json.dumps(record,indent=2,ensure_ascii=False),encoding='utf-8')
+            self._save_sample(analysis_id,review.sample)
         return record
+
+    def _save_sample(self,analysis_id,sample):
+        (self.root/analysis_id/'muestra.json').write_text(sample.model_dump_json(indent=2),encoding='utf-8')
 
     def save_ufc(self,analysis_id,data:PlateUfc):
         """Calcula UFC con el conteo guardado de esta placa (revisado si existe) y lo deja junto a la foto y en el historial."""
@@ -84,6 +89,7 @@ class ResultStore:
                 'reviewed_count':review['reviewed_count'] if review else None,**data.model_dump(),
                 'formula':f'UFC/{data.unit} = promedio de colonias x 10^{data.exponent} / {data.volume_ml:g} mL','result':result}
         with self._lock:
+            self._save_sample(analysis_id,data.sample)
             (self.root/analysis_id/'ufc.json').write_text(json.dumps(record,indent=2,ensure_ascii=False),encoding='utf-8')
             with open(self.root/HISTORY_LOG,'a',encoding='utf-8') as log:log.write(json.dumps(record,ensure_ascii=False)+'\n')
         return record
@@ -105,10 +111,11 @@ class ResultStore:
                                  'duplicate_count':ufc['duplicate_count'],'detection_limit':ufc['result'].get('detection_limit'),
                                  'log10':ufc['result'].get('log10'),'warnings':ufc['result']['warnings'],
                                  'sample':ufc['sample'],'saved_at':ufc['saved_at']}
+                sample=self._read_optional(ident,'muestra.json') or (review or {}).get('sample') or (ufc or {}).get('sample') or {}
                 analyzed_at=_analyzed_at(original,path)
             except (OSError,ResultNotFound,ValueError,KeyError,TypeError):continue  # archivo borrado, corrupto o a medio escribir
             out.append({'analysis_id':ident,'analyzed_at':analyzed_at,'automatic_count':original.get('count'),
-                        'reviewed_count':review['reviewed_count'] if review else None,'ufc':summary})
+                        'reviewed_count':review['reviewed_count'] if review else None,'ufc':summary,'sample':sample})
         out.sort(key=lambda item:item['analyzed_at'],reverse=True)
         return out[:limit]
 
@@ -119,7 +126,7 @@ class ResultStore:
         writer.writerow([name for name,_ in CSV_COLUMNS])
         for item in self.history(limit=100000):
             ufc=item['ufc'] or {}
-            sample=ufc.get('sample') or {}
+            sample=item.get('sample') or ufc.get('sample') or {}
             row={**item,**{k:v for k,v in ufc.items() if k!='sample'},**sample,
                  'dilution':f"10^-{ufc['exponent']}" if ufc else '','warnings':' | '.join(ufc.get('warnings') or []),
                  'in_range':('si' if ufc.get('in_range') else 'no') if ufc else ''}

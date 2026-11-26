@@ -42,3 +42,11 @@ npm test
 5. **Historial:** todos los análisis del servidor con miniatura, fecha, conteo y UFC; botón **Exportar CSV** para descargarlo. Los resultados y fotografías provienen de la API, sin datos de demostración.
 
 Muestras con varias diluciones agrupadas y el reporte PDF quedan para una siguiente versión (`/samples` sigue en desarrollo).
+
+## Datos de muestra y acceso
+
+La PC abre la misma PWA que el QR, en la raíz del servidor (`http://localhost:8000/` con el enlace y clave que imprime `INICIAR.cmd`). `/docs` es la documentación de la API.
+
+Código y tipo de muestra son obligatorios antes de guardar una revisión o UFC. Los dos paneles comparten esos campos y las observaciones. El responsable se obtiene del nombre de la bienvenida. Los datos se conservan en `muestra.json` y se exportan aun sin cálculo de UFC. El CSV omite `placa_duplicada` y `advertencias`.
+
+La API requiere `sample: {code, sample_type, responsible, notes}` en `POST /results/{id}/review` y `POST /results/{id}/ufc`. Los resultados antiguos siguen siendo legibles; al volver a guardar se deben completar los campos obligatorios.
