@@ -1,4 +1,4 @@
-# PWA de conteo de UFC (primera versión)
+# ÑawIA · PWA de conteo de colonias y UFC
 
 Interfaz React con el flujo: **inicio → foto de la placa → resultado con corrección manual → cálculo de UFC → historial**. Usa `/health`, `/analyze`, `/results/{id}/…`, `/results/{id}/review`, `/ufc`, `/results/{id}/ufc` y `/history`.
 
@@ -35,10 +35,10 @@ npm test
 
 ## Pantallas
 
-1. **Inicio:** escudo UNALM, estado del motor, acceso al historial y últimos análisis de este dispositivo.
+1. **Bienvenida e inicio:** identidad UNALM, mascota Petri animada, nombre guardado localmente, estado del motor y los tres últimos análisis del servidor. El nombre no es una cuenta ni filtra el historial. La animación respeta la preferencia de movimiento reducido.
 2. **Registro fotográfico:** capturar o elegir de galería, vista previa y análisis con IA.
 3. **Resultado del análisis:** conteo, colonias cerca del borde, corrección tocando la imagen (quitar o añadir) y **Guardar revisión**. La revisión se guarda aparte en `revision.json`; la predicción original no cambia.
-4. **Cálculo de UFC** (debajo del conteo): dilución de la placa, volumen sembrado, UFC/mL o UFC/g, placa duplicada opcional, rango contable y datos de la muestra (código, tipo, responsable, observaciones). Muestra el resultado con la fórmula y sus números mientras se escribe. **Guardar en el historial** guarda primero la revisión si hay cambios y luego el cálculo en `ufc.json`, junto a la foto.
-5. **Historial:** todos los análisis del servidor con miniatura, fecha, conteo y UFC; botón **CSV** para descargarlo.
+4. **Cálculo de UFC** (junto al conteo en escritorio y debajo en celular): dilución de la placa, volumen sembrado, UFC/mL o UFC/g, placa duplicada opcional, rango contable y datos de la muestra (código, tipo, responsable, observaciones). Muestra el resultado con la fórmula y sus números mientras se escribe. **Guardar en el historial** guarda primero la revisión si hay cambios y luego el cálculo en `ufc.json`, junto a la foto.
+5. **Historial:** todos los análisis del servidor con miniatura, fecha, conteo y UFC; botón **Exportar CSV** para descargarlo. Los resultados y fotografías provienen de la API, sin datos de demostración.
 
 Muestras con varias diluciones agrupadas y el reporte PDF quedan para una siguiente versión (`/samples` sigue en desarrollo).

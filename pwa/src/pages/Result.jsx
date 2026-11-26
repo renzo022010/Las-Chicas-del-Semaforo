@@ -5,7 +5,6 @@ import { Icon } from '../icons.jsx'
 import PlateReview, { pointsFromResult, pointsFromReview, reviewStats } from '../components/PlateReview.jsx'
 import UfcCalculator from '../components/UfcCalculator.jsx'
 import { updateRecent } from '../recent.js'
-import { ufcText } from '../ufc.js'
 
 export default function Result() {
   const { id } = useParams()
@@ -54,48 +53,26 @@ export default function Result() {
   if (!result) return <p className="muted">Cargando resultado…</p>
 
   const stats = reviewStats(points, result.count)
-  const engine = result.method?.includes('sam2') ? 'IA' : 'Resultado anterior'
   const countLabel = edited ? 'con cambios sin guardar' : saved ? 'revisado' : 'automático'
-  return (
-    <div className="stack">
-      <h2 className="page-title">Resultado del análisis</h2>
-
-      <div className="result-grid">
-        <PlateReview imageUrl={api.fileUrl(id, 'foto_original.jpg')} size={result.image_size} points={points}
-          onChange={(p) => { setPoints(p); setEdited(true) }} />
-
-        <aside className="count-card">
-          <span className="label">Colonias detectadas</span>
-          <strong className="big-count">{stats.total}</strong>
-          <dl className="count-list">
-            <div><dt><i className="dot-key dot-auto" /> Automático</dt><dd>{result.count}</dd></div>
-            <div><dt><i className="dot-key dot-edge" /> Cerca del borde</dt><dd>{stats.edge}</dd></div>
-            <div><dt><i className="dot-key dot-manual" /> Añadidas</dt><dd>{stats.added}</dd></div>
-            <div><dt>Quitadas</dt><dd>{stats.removed}</dd></div>
-            <div><dt>Motor</dt><dd>{engine}</dd></div>
-            <div><dt>Tiempo</dt><dd>{result.processing_seconds} s</dd></div>
-            {ufc && <div><dt>{ufc.result.unit}</dt><dd>{ufcText(ufc.result)}</dd></div>}
-          </dl>
-        </aside>
-      </div>
-
-      {saved && !edited && (
-        <p className="ok-note"><Icon name="check" size={18} /> Revisión guardada: {saved.reviewed_count} colonias (automático: {saved.automatic_count}).</p>
-      )}
-      {(result.warnings || []).slice(0, 2).map((w) => <p key={w} className="warn small">{w}</p>)}
-      {error && <p className="alert" role="alert">{error}</p>}
-
-      <button type="button" className="btn btn-primary" onClick={saveReview} disabled={busy || (!edited && saved)}>
-        {busy ? 'Guardando…' : saved && !edited ? 'Revisión guardada' : 'Guardar revisión'}
-      </button>
-
-      <UfcCalculator key={id} count={stats.total} countLabel={countLabel} saved={ufc} onSave={saveUfc} />
-
-      <div className="actions">
-        <Link className="btn btn-ghost" to="/analizar"><Icon name="camera" size={20} /> Nueva foto</Link>
-        <Link className="btn btn-ghost" to="/historial"><Icon name="list" size={20} /> Historial</Link>
-      </div>
-      <a className="text-link small" href={api.fileUrl(id, 'foto_conteo.jpg')} target="_blank" rel="noreferrer">Ver imagen anotada por el motor</a>
+  return <section>
+    <div className="between title-row"><div className="pagehead"><p className="small muted">Análisis {id.slice(0, 8)}</p><h1>Resultado del análisis</h1></div>
+      <div className="row"><Link className="secondary" to="/analizar"><Icon name="camera" />Nueva foto</Link><Link className="secondary" to="/historial"><Icon name="list" />Historial</Link></div>
     </div>
-  )
+    <div className="columns result-columns">
+      <article className="panel stack">
+        <div className="between"><h2>Revisar placa</h2><strong className="count-total" aria-live="polite">{stats.total} colonias</strong></div>
+        <PlateReview imageUrl={api.fileUrl(id, 'foto_original.jpg')} size={result.image_size} points={points} onChange={(p) => { setPoints(p); setEdited(true) }} />
+        <div className="stats"><span>Automático: <b>{result.count}</b></span><span>Añadidas: <b>{stats.added}</b></span><span>Quitadas: <b>{stats.removed}</b></span></div>
+        <p className="small muted">Motor IA · {result.processing_seconds} s · {stats.edge} cerca del borde</p>
+        {saved && !edited && <p className="ok-note" role="status"><Icon name="check" size={18} />Revisión guardada: {saved.reviewed_count} colonias.</p>}
+        {edited && <p className="warn small">Hay cambios sin guardar.</p>}
+        {(result.warnings || []).slice(0, 2).map((w) => <p key={w} className="warn small">{w}</p>)}
+        {error && <p className="alert" role="alert">{error}</p>}
+        <div className="row"><button className="primary" onClick={saveReview} disabled={busy || (!edited && saved)}>{busy ? 'Guardando…' : saved && !edited ? 'Revisión guardada' : 'Guardar revisión'}</button>
+          <a className="link small" href={api.fileUrl(id, 'foto_conteo.jpg')} target="_blank" rel="noreferrer">Ver imagen anotada por el motor</a>
+        </div>
+      </article>
+      <UfcCalculator key={id} count={stats.total} countLabel={countLabel} saved={ufc} onSave={saveUfc} />
+    </div>
+  </section>
 }

@@ -1,6 +1,8 @@
-# Las Chicas del Semáforo — Conteo de colonias con IA
+# ÑawIA — Conteo de colonias con IA
 
 MVP para Agronomía: una PWA permite subir fotografías de placas, contar colonias con IA y revisar las detecciones. OpenCV delimita la placa, Grounding DINO con pesos ColonyGroundedSAM2 detecta colonias y SAM2 obtiene sus máscaras. No se entrenó una nueva red en este proyecto.
+
+Interfaz con la identidad visual de la UNALM: bienvenida con nombre, mascota Petri, captura de fotos, revisión de colonias, cálculo de UFC e historial con exportación CSV. El nombre personaliza la bienvenida y se guarda solo en el navegador; no crea una cuenta ni separa los análisis del servidor.
 
 ## Inicio en Windows
 

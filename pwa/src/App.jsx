@@ -1,35 +1,30 @@
-import { Route, Routes, useLocation, useNavigate } from 'react-router-dom'
+import { Route, Routes, NavLink, useLocation } from 'react-router-dom'
+import { useState } from 'react'
 import { HealthContext, useApiHealth } from './health.js'
-import { Icon } from './icons.jsx'
+import { ProfileContext, readProfile, storeProfile } from './profile.js'
 import Home from './pages/Home.jsx'
 import Analyze from './pages/Analyze.jsx'
 import Result from './pages/Result.jsx'
 import History from './pages/History.jsx'
 
-function Header() {
-  const navigate = useNavigate()
-  return (
-    <header className="appbar">
-      {/* Sin historial previo (enlace abierto directo) se vuelve al inicio en vez de salir de la app. */}
-      <button className="appbar-back" onClick={() => (window.history.state?.idx > 0 ? navigate(-1) : navigate('/'))} aria-label="Volver"><Icon name="back" /></button>
-      <img src="/unalm-escudo-blanco.png" alt="" className="appbar-crest" />
-      <div className="appbar-text">
-        <strong>UNALM</strong>
-        <span>Laboratorio de Microbiología</span>
-      </div>
-    </header>
-  )
-}
-
 export default function App() {
   const health = useApiHealth()
+  const [name, updateName] = useState(readProfile)
   const { pathname } = useLocation()
-  const home = pathname === '/'
+  const setName = (value) => updateName(storeProfile(value))
   return (
-    <HealthContext.Provider value={health}>
-      <div className={'shell' + (home ? ' is-home' : '')}>
-        {!home && <Header />}
-        <main className="content">
+    <ProfileContext.Provider value={{ name, setName }}>
+      <HealthContext.Provider value={health}>
+        <header><div className="bar">
+          <NavLink to="/" className="brand" aria-label="ÑawIA, inicio">
+            <img src="/brand/crest.png" alt="Escudo de la UNALM" />
+            <div><b>UNALM <span className="brand-app">ÑawIA</span></b><small>Universidad Nacional Agraria La Molina</small><small>Facultad de Agronomía</small></div>
+          </NavLink>
+          {(name || pathname !== '/') && <nav className="nav" aria-label="Navegación principal">
+            <NavLink to="/" end>Inicio</NavLink><NavLink to="/analizar">Nueva placa</NavLink><NavLink to="/historial">Historial</NavLink>
+          </nav>}
+        </div></header>
+        <main>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/analizar" element={<Analyze />} />
@@ -38,7 +33,8 @@ export default function App() {
             <Route path="*" element={<Home />} />
           </Routes>
         </main>
-      </div>
-    </HealthContext.Provider>
+        <footer>ÑawIA · Conteo de colonias con inteligencia artificial · UNALM</footer>
+      </HealthContext.Provider>
+    </ProfileContext.Provider>
   )
 }

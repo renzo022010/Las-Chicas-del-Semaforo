@@ -71,7 +71,7 @@ export default function UfcCalculator({ count, countLabel, saved, onSave }) {
   const stale = saved && !dirty && saved.count !== count
   const upToDate = saved && !dirty && !stale
   return (
-    <section className="ufc-card" aria-labelledby="ufc-title">
+    <section className="panel ufc-card stack" aria-labelledby="ufc-title">
       <div className="ufc-head">
         <span className="ufc-icon"><Icon name="calc" size={22} /></span>
         <div>

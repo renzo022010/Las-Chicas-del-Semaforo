@@ -35,18 +35,18 @@ export default function History() {
 
   return (
     <div className="stack">
-      <div className="history-head">
-        <div>
-          <h2 className="page-title">Historial</h2>
+      <div className="between title-row">
+        <div className="pagehead">
+          <h1>Historial del laboratorio</h1>
           <p className="muted small">Análisis guardados en este servidor, del más reciente al más antiguo.</p>
         </div>
-        <a className="btn btn-ghost" href={api.historyCsvUrl()} download="historial_ufc.csv"><Icon name="download" size={20} /> CSV</a>
+        <a className="btn btn-ghost" href={api.historyCsvUrl()} download="historial_ufc.csv"><Icon name="download" size={20} /> Exportar CSV</a>
       </div>
       {error && <p className="alert" role="alert">{error}</p>}
       {!items && !error && <p className="muted">Cargando historial…</p>}
       {items?.length === 0 && <p className="muted">Todavía no hay análisis guardados. <Link to="/analizar">Analiza una placa</Link>.</p>}
       {items?.length > 0 && (
-        <ul className="history-list">
+        <ul className="panel samples history-list">
           {items.map((item) => <li key={item.analysis_id}><HistoryRow item={item} /></li>)}
         </ul>
       )}

@@ -13,14 +13,14 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['unalm-escudo-blanco.png', 'icon-192.png'],
+      includeAssets: ['brand/*.png', 'icon-192.png'],
       manifest: {
-        name: 'Conteo de UFC',
-        short_name: 'Conteo UFC',
-        description: 'Conteo de colonias en placas Petri asistido por imagen.',
+        name: 'ÑawIA · Conteo de colonias',
+        short_name: 'ÑawIA',
+        description: 'ÑawIA: conteo de colonias en placas Petri con inteligencia artificial.',
         lang: 'es',
-        theme_color: '#0b4a36',
-        background_color: '#0b4a36',
+        theme_color: '#123e28',
+        background_color: '#123e28',
         display: 'standalone',
         start_url: '/',
         icons: [
