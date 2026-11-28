@@ -37,8 +37,8 @@ npm test
 
 1. **Bienvenida e inicio:** identidad UNALM, mascota Petri animada, nombre guardado localmente, estado del motor y los tres últimos análisis del servidor. El nombre no es una cuenta ni filtra el historial. La animación respeta la preferencia de movimiento reducido.
 2. **Registro fotográfico:** capturar o elegir de galería, vista previa y análisis con IA.
-3. **Resultado del análisis:** conteo, colonias cerca del borde, corrección tocando la imagen (quitar o añadir) y **Guardar revisión**. La revisión se guarda aparte en `revision.json`; la predicción original no cambia.
-4. **Cálculo de UFC** (junto al conteo en escritorio y debajo en celular): dilución de la placa, volumen sembrado, UFC/mL o UFC/g, placa duplicada opcional, rango contable y datos de la muestra (código, tipo, responsable, observaciones). Muestra el resultado con la fórmula y sus números mientras se escribe. **Guardar en el historial** guarda primero la revisión si hay cambios y luego el cálculo en `ufc.json`, junto a la foto.
+3. **Resultado del análisis:** conteo, colonias cerca del borde, corrección tocando una marca para quitarla o activando **Añadir colonia** y arrastrando desde el centro para definir su radio (mouse o dedo). Pulsar de nuevo el botón cancela el modo. **Deshacer** revierte la última edición. La revisión se guarda aparte en `revision.json`; la predicción original no cambia.
+4. **Cálculo de UFC** (junto al conteo en escritorio y debajo en celular): dilución de la placa, volumen sembrado, UFC/mL o UFC/g, rango contable plegado por defecto y datos de la muestra (código, tipo, responsable, observaciones). El bloque Resultado muestra únicamente el valor y su fórmula numérica. **Guardar en el historial** guarda primero la revisión si hay cambios y luego el cálculo en `ufc.json`, junto a la foto.
 5. **Historial:** todos los análisis del servidor con miniatura, fecha, conteo y UFC; botón **Exportar CSV** para descargarlo. Los resultados y fotografías provienen de la API, sin datos de demostración.
 
 Muestras con varias diluciones agrupadas y el reporte PDF quedan para una siguiente versión (`/samples` sigue en desarrollo).
@@ -47,6 +47,6 @@ Muestras con varias diluciones agrupadas y el reporte PDF quedan para una siguie
 
 La PC abre la misma PWA que el QR, en la raíz del servidor (`http://localhost:8000/` con el enlace y clave que imprime `INICIAR.cmd`). `/docs` es la documentación de la API.
 
-Código y tipo de muestra son obligatorios antes de guardar una revisión o UFC. Los dos paneles comparten esos campos y las observaciones. El responsable se obtiene del nombre de la bienvenida. Los datos se conservan en `muestra.json` y se exportan aun sin cálculo de UFC. El CSV omite `placa_duplicada` y `advertencias`.
+Código y tipo de muestra son obligatorios antes de guardar una revisión o UFC. Esos campos y las observaciones aparecen una sola vez, al final del cálculo de UFC, antes de **Guardar en el historial**. Este es el único botón de guardado y persiste tanto la revisión (centros, radios y tipo de marca) como el cálculo. El responsable se obtiene del nombre de la bienvenida. Los datos se conservan en `muestra.json` y se exportan aun sin cálculo de UFC. El CSV omite `placa_duplicada` y `advertencias`.
 
 La API requiere `sample: {code, sample_type, responsible, notes}` en `POST /results/{id}/review` y `POST /results/{id}/ufc`. Los resultados antiguos siguen siendo legibles; al volver a guardar se deben completar los campos obligatorios.

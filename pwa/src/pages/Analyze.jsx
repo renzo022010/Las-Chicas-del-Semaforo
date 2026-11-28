@@ -49,7 +49,6 @@ export default function Analyze() {
       {health.status === 'offline' && <p className="alert">El servidor está apagado. Inícialo con INICIAR.cmd.</p>}
       {health.status === 'denied' && <p className="alert">Falta la clave de acceso. Abre el link completo o el QR de INICIAR.cmd.</p>}
       {error && <p className="alert" role="alert">{error}</p>}
-      <p className="note">En CPU el análisis puede tardar varios minutos. Mantén esta página abierta hasta obtener el resultado.</p>
     </div>
     <input ref={camera} type="file" accept="image/*" capture="environment" hidden onChange={pick} aria-label="Capturar foto" />
     <input ref={gallery} type="file" accept="image/*" hidden onChange={pick} aria-label="Elegir imagen" />

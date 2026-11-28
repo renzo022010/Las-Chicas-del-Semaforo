@@ -136,6 +136,17 @@ class HistoryApiTests(unittest.TestCase):
             row=list(csv.DictReader(io.StringIO(c.get('/history/csv').content.decode('utf-8-sig'))))[0]
             self.assertEqual((row['codigo_muestra'],row['observaciones']),('M-02','Nueva observación'))
 
+    def test_review_preserves_radius_and_kind(self):
+        fake_analysis(self.api,A,12)
+        with self.client() as c:
+            point={'x':50,'y':60,'r':23.5,'kind':'manual'}
+            body={'centers':[point],'sample':{'code':'M','sample_type':'Agua'}}
+            response=c.post(f'/results/{A}/review',json=body)
+            self.assertEqual(response.status_code,200,response.text)
+            self.assertEqual(c.get(f'/results/{A}/revision.json').json()['centers'],[point])
+            body['centers'][0]['r']=-1
+            self.assertEqual(c.post(f'/results/{A}/review',json=body).status_code,422)
+
     def test_same_interface_localhost_and_network(self):
         for host in ('localhost','192.168.1.10'):
             with TestClient(create_app(output=self.api,samples_db=self.root/'m.db',use_hybrid=False),base_url=f'http://{host}') as c:

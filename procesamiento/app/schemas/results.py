@@ -5,6 +5,8 @@ from pydantic import BaseModel,Field,model_validator,field_validator
 class Point(BaseModel):
     x:float=Field(ge=0,allow_inf_nan=False)
     y:float=Field(ge=0,allow_inf_nan=False)
+    r:float|None=Field(default=None,gt=0,allow_inf_nan=False)
+    kind:Literal['auto','edge','manual']='auto'
 
 class SampleInfo(BaseModel):
     """Trazabilidad de la muestra: se guarda junto a la foto y aparece en el historial."""

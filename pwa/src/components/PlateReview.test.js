@@ -10,6 +10,11 @@ const result = {
 }
 
 describe('plate review', () => {
+  it('restores drawn radii and manual marks without changing their size', () => {
+    const points = pointsFromReview({ centers: [{ x: 40, y: 50, r: 2, kind: 'manual' }, { x: 10, y: 10, r: 30, kind: 'edge' }] }, result)
+    expect(points).toEqual([{ x: 40, y: 50, r: 2, kind: 'manual' }, { x: 10, y: 10, r: 30, kind: 'edge' }])
+  })
+
   it('marks colonies near the plate edge for review', () => {
     expect(pointsFromResult(result).map((p) => p.kind)).toEqual(['auto', 'edge', 'auto'])
   })

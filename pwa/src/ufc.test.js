@@ -26,20 +26,19 @@ describe('presentacion de UFC', () => {
 
 describe('formulario de UFC', () => {
   it('parte de valores tipicos y recupera un calculo guardado', () => {
-    expect(formFromRecord(null)).toMatchObject({ exponent: 1, volume: '0.1', unit: 'mL', duplicate: '' })
+    expect(formFromRecord(null)).toMatchObject({ exponent: 1, volume: '0.1', unit: 'mL' })
     const saved = { exponent: 3, volume_ml: 1, unit: 'g', duplicate_count: 50, count_min: 25, count_max: 250, sample: { code: 'M-1' } }
     expect(bodyFromForm(formFromRecord(saved))).toEqual({
-      exponent: 3, volume_ml: 1, unit: 'g', duplicate_count: 50, count_min: 25, count_max: 250,
+      exponent: 3, volume_ml: 1, unit: 'g', duplicate_count: null, count_min: 25, count_max: 250,
       sample: { code: 'M-1', sample_type: '', responsible: '', notes: '' },
     })
   })
 
-  it('valida volumen, placa duplicada y rango antes de calcular', () => {
+  it('valida volumen y rango antes de calcular', () => {
     const ok = formFromRecord(null)
     expect(formError(ok)).toBe('')
     expect(formError({ ...ok, volume: '0' })).toMatch(/volumen/)
     expect(formError({ ...ok, volume: '0,1' })).toBe('')
-    expect(formError({ ...ok, duplicate: '4.5' })).toMatch(/duplicada/)
     expect(formError({ ...ok, min: '300', max: '30' })).toMatch(/rango/)
   })
 })

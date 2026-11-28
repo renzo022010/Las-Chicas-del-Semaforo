@@ -3,7 +3,7 @@ import SampleFields, { validSample } from './SampleFields.jsx'
 import { api } from '../api.js'
 import { Icon } from '../icons.jsx'
 import { fmtDateTime } from '../recent.js'
-import { dilutionLabel, fmtNum, formulaText, ufcText } from '../ufc.js'
+import { dilutionLabel, formulaText, ufcText } from '../ufc.js'
 
 const EXPONENTS = [0, 1, 2, 3, 4, 5, 6, 7, 8]
 const BLANK_SAMPLE = { code: '', sample_type: '', responsible: '', notes: '' }
@@ -11,10 +11,9 @@ const toNumber = (text) => Number(String(text).trim().replace(',', '.'))
 
 // Formulario en texto (lo que se escribe) <-> cuerpo de la API (numeros).
 export function formFromRecord(rec) {
-  if (!rec) return { exponent: 1, volume: '0.1', unit: 'mL', duplicate: '', min: '30', max: '300', sample: BLANK_SAMPLE }
+  if (!rec) return { exponent: 1, volume: '0.1', unit: 'mL', min: '30', max: '300', sample: BLANK_SAMPLE }
   return {
     exponent: rec.exponent, volume: String(rec.volume_ml), unit: rec.unit,
-    duplicate: rec.duplicate_count == null ? '' : String(rec.duplicate_count),
     min: String(rec.count_min), max: String(rec.count_max), sample: { ...BLANK_SAMPLE, ...rec.sample },
   }
 }
@@ -22,7 +21,7 @@ export function formFromRecord(rec) {
 export function bodyFromForm(form) {
   return {
     exponent: Number(form.exponent), volume_ml: toNumber(form.volume), unit: form.unit,
-    duplicate_count: form.duplicate === '' ? null : toNumber(form.duplicate),
+    duplicate_count: null,
     count_min: toNumber(form.min), count_max: toNumber(form.max), sample: form.sample,
   }
 }
@@ -30,14 +29,13 @@ export function bodyFromForm(form) {
 export function formError(form) {
   const b = bodyFromForm(form)
   if (!(b.volume_ml > 0 && b.volume_ml <= 10)) return 'El volumen sembrado debe estar entre 0.01 y 10 mL.'
-  if (b.duplicate_count != null && !(Number.isInteger(b.duplicate_count) && b.duplicate_count >= 0)) return 'La placa duplicada debe ser un número entero de colonias.'
   if (!(Number.isInteger(b.count_min) && Number.isInteger(b.count_max) && b.count_min >= 0 && b.count_min < b.count_max)) return 'Revisa el rango contable: el mínimo debe ser menor que el máximo.'
   return ''
 }
 
 // Calculo de UFC de la placa analizada. `count` es el conteo que se ve en pantalla; al guardar, el servidor usa el
 // conteo guardado (revision o automatico), por eso la pagina guarda primero la revision si hay cambios.
-export default function UfcCalculator({ count, countLabel, saved, onSave, sample, onSampleChange, saving }) {
+export default function UfcCalculator({ count, countLabel, saved, onSave, sample, onSampleChange, saving, reviewEdited }) {
   const [form, setForm] = useState(() => formFromRecord(saved))
   const [preview, setPreview] = useState(null)
   const [busy, setBusy] = useState(false)
@@ -70,14 +68,14 @@ export default function UfcCalculator({ count, countLabel, saved, onSave, sample
 
   const row = preview?.rows?.[0]
   const stale = saved && !dirty && saved.count !== count
-  const upToDate = saved && !dirty && !stale && ['code', 'sample_type', 'notes', 'responsible'].every(k => (saved.sample?.[k] || '') === sample[k])
+  const upToDate = saved && !dirty && !stale && !reviewEdited && saved.duplicate_count == null && ['code', 'sample_type', 'notes', 'responsible'].every(k => (saved.sample?.[k] || '') === sample[k])
   return (
     <section className="panel ufc-card stack" aria-labelledby="ufc-title">
       <div className="ufc-head">
         <span className="ufc-icon"><Icon name="calc" size={22} /></span>
         <div>
           <h3 id="ufc-title">Cálculo de UFC</h3>
-          <p className="muted small">Placa A: <strong>{count}</strong> colonias ({countLabel})</p>
+          <p className="muted small">Conteo: <strong>{count}</strong> colonias ({countLabel})</p>
         </div>
       </div>
 
@@ -102,11 +100,6 @@ export default function UfcCalculator({ count, countLabel, saved, onSave, sample
             {['mL', 'g'].map((u) => <button key={u} type="button" aria-pressed={form.unit === u} onClick={() => set({ unit: u })}>UFC/{u}</button>)}
           </div>
         </div>
-        <label className="field">
-          <span className="label">Placa B, duplicada (opcional)</span>
-          <input className="input" type="text" inputMode="numeric" placeholder="Colonias de la otra placa" value={form.duplicate}
-            onChange={(e) => set({ duplicate: e.target.value.replace(/[^\d]/g, '') })} />
-        </label>
       </div>
       {form.unit === 'g' && <p className="muted small">Para UFC/g, la dilución debe incluir la del homogeneizado inicial (por ejemplo, 10 g en 90 mL = 10⁻¹).</p>}
 
@@ -125,16 +118,7 @@ export default function UfcCalculator({ count, countLabel, saved, onSave, sample
           <>
             <span className="label">Resultado</span>
             <p className="ufc-value"><strong>{ufcText(preview)}</strong> <span>{preview.unit}</span></p>
-            <p className="muted small">
-              {preview.value > 0 && <>Valor sin redondear: {fmtNum(preview.value, 1)} · log₁₀ = {fmtNum(preview.log10, 2)} · </>}
-              Dilución {dilutionLabel(row.exponent)}
-            </p>
             <p className="ufc-formula">{formulaText(row, form.unit)}</p>
-            <p className="muted small">Fórmula: UFC/{form.unit} = colonias (promedio de placas) × factor de dilución ÷ volumen sembrado (mL)</p>
-            {preview.in_range
-              ? <p className="ok-note small"><Icon name="check" size={16} /> Dentro del rango contable ({form.min}–{form.max} colonias)</p>
-              : null}
-            {(preview.warnings || []).map((w) => <p key={w} className="warn small">{w}</p>)}
           </>
         )}
       </div>
