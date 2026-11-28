@@ -5,7 +5,7 @@ from pydantic import BaseModel,Field,model_validator
 
 class Plate(BaseModel):
     count:int|None=Field(default=None,ge=0,le=100000)
-    analysis_id:str|None=Field(default=None,pattern='^[0-9a-f]{32}$')
+    analysis_id:str|None=Field(default=None,pattern='^([A-Z][0-9]{4}|[0-9a-f]{32})$')
 
 class Dilution(BaseModel):
     exponent:int=Field(ge=0,le=12)  # 10^-exponent

@@ -43,6 +43,7 @@ class HybridTests(unittest.TestCase):
                 response=client.post('/analyze?engine=hybrid',files={'file':('photo.png',raw.getvalue(),'image/png')})
                 self.assertEqual(response.status_code,200,response.text)
                 record=response.json();ident=record['analysis_id']
+                self.assertEqual(ident,'A0001')
                 self.assertEqual(record['count'],0)
                 self.assertEqual(client.get(record['annotated_url']).status_code,200)
                 original=(Path(tmp)/ident/'foto_resultado.json').read_bytes()
@@ -56,5 +57,6 @@ class HybridTests(unittest.TestCase):
                 ufc=client.post(f'/results/{ident}/ufc',json={'sample':{'code':'M-TEST','sample_type':'Agua','responsible':'Ana'},'exponent':2,'volume_ml':.1}).json()
                 self.assertEqual((ufc['count'],ufc['count_source']),(1,'revisado'))
                 self.assertEqual(client.get('/history').json()[0]['ufc']['count'],1)
+                self.assertIn('A0001',client.get('/history/csv').text)
                 self.assertEqual(client.get('/results/'+'a'*32+'/contador.py').status_code,404)
 if __name__=='__main__':unittest.main(verbosity=2)

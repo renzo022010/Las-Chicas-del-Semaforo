@@ -3,7 +3,7 @@ from app.config import MAX_BYTES
 from app.dependencies import get_engines,get_results
 from app.services.engines import EngineService,EngineUnavailable
 from app.services.images import InvalidPhoto,decode_photo
-from app.services.results import ResultStore
+from app.services.results import ResultStore,SequenceExhausted
 router=APIRouter(tags=['Analisis'])
 
 @router.post('/analyze')
@@ -17,7 +17,8 @@ async def analyze(file:UploadFile=File(...),engine:str='auto',
     if len(raw)>MAX_BYTES:raise HTTPException(413,'Maximo 20 MB')
     try:bgr=decode_photo(raw)
     except InvalidPhoto as exc:raise HTTPException(400,'Fotografia no valida: '+str(exc)) from exc
-    ident,folder=results.new_folder()
+    try:ident,folder=results.new_folder()
+    except SequenceExhausted as exc:raise HTTPException(409,str(exc)) from exc
     result=await engines.analyze(bgr,engine,folder)
     result['analysis_id']=ident
     result['engine']=engine

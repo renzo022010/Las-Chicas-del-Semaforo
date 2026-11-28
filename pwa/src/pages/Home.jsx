@@ -48,7 +48,7 @@ export default function Home() {
       <article className="panel feature stack"><h2>Nuevo conteo</h2><p>Fotografía la placa completa o elige una imagen de tu galería.</p><div className="row">
         <button className="primary" onClick={() => camera.current.click()}><Icon name="camera" />Tomar foto</button>
         <button className="secondary" onClick={() => gallery.current.click()}><Icon name="image" />Galería</button>
-      </div><EngineStatus /></article>
+      </div></article>
       <article className="panel stack"><div className="between"><h2>Últimos análisis</h2><Link className="link" to="/historial">Ver historial</Link></div>
         {error ? <p className="alert" role="alert">{error}</p> : recent === null ? <p className="muted">Cargando análisis…</p> : recent.length ? <ul className="history-list">{recent.map((item) => <li key={item.analysis_id}><HistoryRow item={item} /></li>)}</ul> : <p className="muted empty-history">Tu primera placa empieza aquí. Los análisis aparecerán en este espacio.</p>}
       </article>

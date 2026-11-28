@@ -114,3 +114,7 @@ En `pwa`, ejecutar `npm test` y `npm run build` al cambiar la interfaz. La compi
 - [BERT base uncased](https://huggingface.co/google-bert/bert-base-uncased).
 
 Los hashes y commits de referencia están en `procesamiento/referencias`. Los modelos y repositorios auxiliares mantienen las condiciones y licencias de sus autores.
+
+## Identificadores de análisis
+
+Los nuevos análisis reciben A0001, A0002… A9999, B0001… hasta Z9999. La secuencia es por servidor y se conserva en `procesamiento/resultados/api/secuencia.sqlite3`; localhost y el QR comparten la misma secuencia. Copiar esta base junto con los resultados al respaldar. Un análisis fallido puede dejar un número reservado; nunca se reutiliza. Los análisis anteriores con UUID siguen accesibles sin renombrarlos.

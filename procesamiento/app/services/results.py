@@ -4,7 +4,8 @@ Cada analisis vive en resultados/api/<id>/ (foto, conteo, revision.json, ufc.jso
 calculo de UFC guardado, sin sobrescribir los anteriores, para poder auditar cambios."""
 from datetime import datetime
 from pathlib import Path
-import csv,io,json,threading,uuid
+import csv,io,json,threading,re,sqlite3
+from contextlib import closing
 from PIL import Image
 from app.config import RESULT_FILES
 from app.schemas.results import PlateUfc
@@ -12,6 +13,7 @@ from app.schemas.samples import Dilution,Plate,UfcInput
 from app.services.ufc import calcular_ufc
 
 class ResultNotFound(Exception):pass
+class SequenceExhausted(Exception):pass
 
 THUMB_SIDE=360
 HISTORY_LOG='historial.jsonl'
@@ -22,7 +24,7 @@ CSV_COLUMNS=(('fecha_analisis','analyzed_at'),('id_analisis','analysis_id'),('co
     ('observaciones','notes'),('ufc_guardado','saved_at'))
 
 def _valid_id(analysis_id):
-    return len(analysis_id)==32 and all(c in '0123456789abcdef' for c in analysis_id)
+    return bool(re.fullmatch(r'[A-Z][0-9]{4}|[0-9a-f]{32}',analysis_id))
 
 def _iso(timestamp):return datetime.fromtimestamp(timestamp).isoformat(timespec='seconds')
 
@@ -35,8 +37,27 @@ class ResultStore:
         self.root=Path(root);self._lock=threading.Lock()
 
     def new_folder(self):
-        ident=uuid.uuid4().hex
-        return ident,self.root/ident
+        # Reserva persistente compartida entre procesos y dispositivos; nunca reutiliza IDs.
+        self.root.mkdir(parents=True,exist_ok=True)
+        with closing(sqlite3.connect(self.root/'secuencia.sqlite3',timeout=30)) as db, db:
+            db.execute('BEGIN IMMEDIATE')
+            db.execute('CREATE TABLE IF NOT EXISTS counter (id INTEGER PRIMARY KEY CHECK(id=1), value INTEGER NOT NULL)')
+            row=db.execute('SELECT value FROM counter WHERE id=1').fetchone()
+            if row is None:
+                existing=[(ord(p.name[0])-ord('A'))*9999+int(p.name[1:]) for p in self.root.iterdir()
+                          if re.fullmatch(r'[A-Z][0-9]{4}',p.name)]
+                value=max(existing,default=0)
+            else:value=row[0]
+            while value<26*9999:
+                value+=1
+                letter,number=divmod(value-1,9999)
+                ident=f'{chr(ord("A")+letter)}{number+1:04d}'
+                folder=self.root/ident
+                try:folder.mkdir()
+                except FileExistsError:continue
+                db.execute('INSERT OR REPLACE INTO counter (id,value) VALUES (1,?)',(value,))
+                return ident,folder
+            raise SequenceExhausted('Se agotaron los identificadores disponibles hasta Z9999')
 
     def path(self,analysis_id,name):
         if not _valid_id(analysis_id) or name not in RESULT_FILES:raise ResultNotFound

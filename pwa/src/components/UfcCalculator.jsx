@@ -119,6 +119,7 @@ export default function UfcCalculator({ count, countLabel, saved, onSave, sample
             <span className="label">Resultado</span>
             <p className="ufc-value"><strong>{ufcText(preview)}</strong> <span>{preview.unit}</span></p>
             <p className="ufc-formula">{formulaText(row, form.unit)}</p>
+            <p className="muted small">Fórmula: UFC/{form.unit} = colonias × factor de dilución ÷ volumen sembrado (mL)</p>
           </>
         )}
       </div>

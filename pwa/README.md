@@ -35,10 +35,10 @@ npm test
 
 ## Pantallas
 
-1. **Bienvenida e inicio:** identidad UNALM, mascota Petri animada, nombre guardado localmente, estado del motor y los tres últimos análisis del servidor. El nombre no es una cuenta ni filtra el historial. La animación respeta la preferencia de movimiento reducido.
+1. **Bienvenida e inicio:** identidad UNALM, mascota Petri animada, nombre guardado localmente, los tres últimos análisis del servidor. El nombre no es una cuenta ni filtra el historial. La animación respeta la preferencia de movimiento reducido.
 2. **Registro fotográfico:** capturar o elegir de galería, vista previa y análisis con IA.
 3. **Resultado del análisis:** conteo, colonias cerca del borde, corrección tocando una marca para quitarla o activando **Añadir colonia** y arrastrando desde el centro para definir su radio (mouse o dedo). Pulsar de nuevo el botón cancela el modo. **Deshacer** revierte la última edición. La revisión se guarda aparte en `revision.json`; la predicción original no cambia.
-4. **Cálculo de UFC** (junto al conteo en escritorio y debajo en celular): dilución de la placa, volumen sembrado, UFC/mL o UFC/g, rango contable plegado por defecto y datos de la muestra (código, tipo, responsable, observaciones). El bloque Resultado muestra únicamente el valor y su fórmula numérica. **Guardar en el historial** guarda primero la revisión si hay cambios y luego el cálculo en `ufc.json`, junto a la foto.
+4. **Cálculo de UFC** (junto al conteo en escritorio y debajo en celular): dilución de la placa, volumen sembrado, UFC/mL o UFC/g, rango contable plegado por defecto y datos de la muestra (código, tipo, responsable, observaciones). El bloque Resultado muestra el valor, la fórmula numérica con unidades y la fórmula general. **Guardar en el historial** guarda primero la revisión si hay cambios y luego el cálculo en `ufc.json`, junto a la foto.
 5. **Historial:** todos los análisis del servidor con miniatura, fecha, conteo y UFC; botón **Exportar CSV** para descargarlo. Los resultados y fotografías provienen de la API, sin datos de demostración.
 
 Muestras con varias diluciones agrupadas y el reporte PDF quedan para una siguiente versión (`/samples` sigue en desarrollo).
